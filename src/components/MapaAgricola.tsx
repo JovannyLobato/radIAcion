@@ -1,18 +1,31 @@
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Centro geográfico exacto del rectángulo (Promedio de las esquinas)
 const CENTRO_AREA: [number, number] = [20.680000, -101.360139];
 
-// Vértices del polígono en orden perimetral (SO -> NO -> NE -> SE)
-const LIMITE_PARCELA_IRAPUATO: [number, number][] = [
-  [20.620667, -101.428139], // Inferior izquierda (SO)
-  [20.739333, -101.428139], // Superior izquierda (NO)
-  [20.739333, -101.292139], // Superior derecha (NE)
-  [20.620667, -101.292139], // Inferior derecha (SE)
+const LIMITE_AREA_IRAPUATO: [number, number][] = [
+  [20.620667, -101.428139],
+  [20.739333, -101.428139],
+  [20.739333, -101.292139],
+  [20.620667, -101.292139],
 ];
 
+interface WeatherData {
+  current_temperature: number;
+  current_soil_temp: number;
+}
+
 export const MapaAgricola = () => {
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/api/weather')
+      .then((res) => res.json())
+      .then((data) => setWeather(data))
+      .catch((err) => console.error('Error fetching weather:', err));
+  }, []);
+
   return (
     <div style={{ height: '90vh', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
       <MapContainer 
@@ -26,7 +39,7 @@ export const MapaAgricola = () => {
         /> 
 
         <Polygon 
-          positions={LIMITE_PARCELA_IRAPUATO} 
+          positions={LIMITE_AREA_IRAPUATO} 
           pathOptions={{ color: '#2e7d32', fillColor: '#4caf50', fillOpacity: 0.25, weight: 2 }} 
         />
 
@@ -34,7 +47,15 @@ export const MapaAgricola = () => {
           <Popup>
             <strong>Zona Agrícola Irapuato</strong> <br />
             Centro: 20.6800, -101.3601 <br />
-            <em>Región delimitada por coordenadas GPS de estudio</em>
+            {weather ? (
+              <>
+                <hr />
+                Temp. Aire: {weather.current_temperature} °C <br />
+                Temp. Suelo: {weather.current_soil_temp} °C
+              </>
+            ) : (
+              <em>Cargando datos climáticos...</em>
+            )}
           </Popup>
         </Marker>
       </MapContainer>
